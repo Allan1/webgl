@@ -1,0 +1,5 @@
+http://www.html5rocks.com/en/tutorials/webgl/webgl_fundamentals/?redirect_from_locale=pt
+http://greggman.github.io/webgl-fundamentals/webgl/lessons/webgl-image-processing.html
+http://stackoverflow.com/questions/8652985/2d-image-processing-with-webgl
+http://www.khronos.org/files/webgl/webgl-reference-card-1_0.pdf
+http://davidwalsh.name/webgl-demos
