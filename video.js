@@ -2,6 +2,9 @@ var vertPosBuf;
 var vertTextBuf;
 var gl;
 var shader;
+var brightness = 0.0;
+var contrast = 0.0;
+var saturation = 0.0;
 
 var video, videoImage, videoImageContext, videoTexture;
 
@@ -179,9 +182,6 @@ function webGLStart() {
 	shader.vertexPositionAttribute 	= gl.getAttribLocation(shader, "aVertexPosition");
 	shader.vertexTextAttribute 		= gl.getAttribLocation(shader, "aVertexTexture");
 	shader.SamplerUniform	 		= gl.getUniformLocation(shader, "uSampler");
-	//shader.fragBrightness			= gl.getUniformLocation(shader,"brightness");
-	//shader.fragContrast				= gl.getUniformLocation(shader,"contrast");
-	//shader.fragSaturation			= gl.getUniformLocation(shader,"saturation");
 
 	if (shader.vertexPositionAttribute < 0 || shader.vertexTextAttribute < 0 ||
 		shader.SamplerUniform < 0 || shader.fragContrast < 0 || shader.fragBrightness < 0 || shader.fragSaturation < 0) 
@@ -206,6 +206,15 @@ function render() {
 		videoImageContext.drawImage( video, 0, 0, videoImage.width, videoImage.height );
 		videoTexture.needsUpdate = true;
 	}
+
+	var fragBrightness			= gl.getUniformLocation(shader,"brightness");
+	var fragContrast			= gl.getUniformLocation(shader,"contrast");
+	var fragSaturation			= gl.getUniformLocation(shader,"saturation");
+
+	gl.uniform1f(fragBrightness, brightness);
+	gl.uniform1f(fragContrast, contrast);
+	gl.uniform1f(fragSaturation, saturation);
+	//console.log(fragBrightness);
 
 	var kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
 
@@ -257,4 +266,12 @@ function render() {
 	drawScene();
 }
 
-
+function changeContrast (t) {
+	contrast = t.value;
+}
+function changeBrightness (t) {
+	brightness = t.value;
+}
+function changeSaturation (t) {
+	saturation = t.value;
+}
