@@ -30,6 +30,10 @@
 	uniform float saturation;
 	uniform float hue;
 	uniform int posterize;
+	uniform float wave;
+	uniform float waveWidth;
+  	uniform float time;
+  	float pi = 3.14159265358979323846264;
 		
 	void main(void) {	
 		vec4 c = texture2D(uSampler, vTextureCoord);
@@ -66,8 +70,21 @@
 
 	   c = c2;
 
+
+	   //Efeito de ondas
+
+	   if(waveWidth > 0.0)
+	   {
+		vec2 coordOffset = -u_textureSize*0.5;
+		vec2 v = gl_FragCoord.xy + coordOffset;
+		float d = length(v);
+		float radius = 0.5 * max(u_textureSize.x, u_textureSize.y);
+		v += max(0.0, (radius-d)/radius) * wave * 30.0 * cos(pi*(d/waveWidth - 2.0*time));
+		vec2 texCoord = (v - coordOffset) / u_textureSize;
+		c = texture2D(uSampler, texCoord);
+	   }
+
 	   //Brilho
-	   
 	    c.rgb += brightness;
 
 	    //Contraste
@@ -77,7 +94,6 @@
 	      c.rgb = (c.rgb-0.5)*(1.0+contrast) + 0.5;
 
 	    //Saturação
-	    
 	    float avg = (c.r+c.g+c.b)/3.0;
 	    if(saturation > 0.0)
 	      c.rgb += (avg - c.rgb) * (1.0 - 1.0/(1.001 - saturation));
@@ -86,7 +102,7 @@
 
 
 	  	/* hue adjustment, wolfram alpha: RotationTransform[angle, {1, 1, 1}][{x, y, z}] */
-        float angle = hue * 3.14159265;
+        float angle = hue * pi;
         float sen = sin(angle);
         float cos = cos(angle);
         vec3 weights = (vec3(2.0 * cos, -sqrt(3.0) * sen - cos, sqrt(3.0) * sen - cos) + 1.0) / 3.0;
@@ -101,8 +117,8 @@
         if(posterize == 1)
         {
         	float arg = 0.6;
-			float level = (1.0-arg)*9.0+1.0;
-			c.rgb = floor(c.rgb * level + 0.5) / level;
+			float level = ((1.0-arg)*9.0)+1.0;
+			c.rgb = floor((c.rgb * level) + 0.5) / level;
         }
 
 	    gl_FragColor = c;
@@ -122,17 +138,25 @@
     <div id="output"> </div>
     <br/>
     <div id="inputs">
-		<label for="brightness">Brilho</label>
-		<input type="range" id="brightness" min=-1 max=1 value=0 step=0.1 onchange="changeBrightness(this);">
-		<label for="contrast">Contraste</label>
-		<input type="range" id="contrast" min=-1 max=1 value=0 step=0.1 onchange="changeContrast(this);">
-		<label for="saturation">Satarutação</label>
-		<input type="range" id="saturation" min=-1 max=1 value=0 step=0.1 onchange="changeSaturation(this);">
-		<label for="sharpness">Nitidez</label>
-		<input type="range" id="sharpness" min=-1 max=1 value=0 step=1 onchange="changeSharpness(this);">
-		<label for="hue">Hue</label>
-		<input type="range" id="hue" min=-1 max=1 value=0 step=0.1 onchange="changeHue(this);">
-		<input type="checkbox" id='posterizar'value=0 onchange="setPosterize(this)">Posterizar
+    	<form id='filters'>
+			<label for="brightness">Brilho</label>
+			<input type="range" id="brightness" min=-1 max=1 value=0 step=0.1 onchange="changeBrightness(this);">
+			<label for="contrast">Contraste</label>
+			<input type="range" id="contrast" min=-1 max=1 value=0 step=0.1 onchange="changeContrast(this);">
+			<label for="saturation">Satarutação</label>
+			<input type="range" id="saturation" min=-1 max=1 value=0 step=0.1 onchange="changeSaturation(this);">
+			<label for="sharpness">Nitidez</label>
+			<input type="range" id="sharpness" min=-1 max=1 value=0 step=1 onchange="changeSharpness(this);">
+			<label for="hue">Hue</label>
+			<input type="range" id="hue" min=-1 max=1 value=0 step=0.1 onchange="changeHue(this);">
+			<label for="wave">Ondulações</label>
+			<input type="range" id="wave" min=0 max=1 value=0 step=0.1 onchange="changeWave(this);">
+			<label for="waveWidth">Tamanho da Onda</label>
+			<input type="range" id="waveWidth" min=1 max=100 value=25 step=10 onchange="changeWaveWidth(this);">
+			<input type="checkbox" id='posterizar'value=0 onchange="setPosterize(this)">Posterizar
+			<br>
+			<input type="button" onclick="resetFilters()" value="Desfazer">
+    	</form>
 	</div>
 	<div id="myCanvas">
 		<canvas id="videoGL" width="320" height="240" style="visibility: visible;"></canvas>

@@ -9,6 +9,8 @@ var hue = 0.0;
 var sharpness = 0.0;
 var kernelLocation = null;
 var posterize = 0;
+var wave = 0;
+var waveWidth = 25.0;
 var kernel = [
       0, 0, 0,
       0, 1, 0,
@@ -171,6 +173,8 @@ function drawScene() {
 	gl.bindTexture(gl.TEXTURE_2D, videoTexture);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoImage);
 	videoTexture.needsUpdate = false;	
+
+	//console.log(video.currentTime);
 		
 	gl.uniform1i(shader.SamplerUniform,0);
 	gl.uniform1f(shader.fragBrightness,1);
@@ -315,17 +319,25 @@ function render() {
 		videoTexture.needsUpdate = true;
 	}
 
-	var fragBrightness			= gl.getUniformLocation(shader,"brightness");
-	var fragContrast			= gl.getUniformLocation(shader,"contrast");
-	var fragSaturation			= gl.getUniformLocation(shader,"saturation");
-	var fragHue					= gl.getUniformLocation(shader,"hue");
-	var fragPosterize			= gl.getUniformLocation(shader,"posterize");
+	var fragBrightness	= gl.getUniformLocation(shader,"brightness");
+	var fragContrast	= gl.getUniformLocation(shader,"contrast");
+	var fragSaturation	= gl.getUniformLocation(shader,"saturation");
+	var fragHue			= gl.getUniformLocation(shader,"hue");
+	var fragPosterize	= gl.getUniformLocation(shader,"posterize");
+	var fragWave		= gl.getUniformLocation(shader,"wave");
+	var fragTime		= gl.getUniformLocation(shader,"time");
+	var textureSize		= gl.getUniformLocation(shader,"u_textureSize");
+	var fragWaveWidth 	= gl.getUniformLocation(shader,"waveWidth");
 
+	gl.uniform2f(textureSize,gl.viewportWidth,gl.viewportHeight);
 	gl.uniform1f(fragBrightness, brightness);
+	gl.uniform1f(fragWaveWidth,waveWidth);
 	gl.uniform1f(fragContrast, contrast);
 	gl.uniform1f(fragSaturation, saturation);
 	gl.uniform1f(fragHue, hue);
 	gl.uniform1i(fragPosterize,posterize);
+	gl.uniform1f(fragWave,wave);
+	gl.uniform1f(fragTime,video.currentTime);
 	//console.log(fragBrightness);
 
 	kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
@@ -335,6 +347,21 @@ function render() {
 
 	drawScene();
 }
+
+function resetFilters()
+{
+	document.getElementById("filters").reset();
+	brightness = 0.0;
+	contrast = 0.0;
+	saturation = 0.0;
+	hue = 0.0;
+	sharpness = 0.0;
+	kernelLocation = null;
+	posterize = 0;
+	wave = 0;
+	waveWidth = 25.0;	
+}
+
 function setPosterize(t)
 {
 	if(t.checked) posterize = 1;
@@ -347,6 +374,14 @@ function changeContrast (t) {
 function changeBrightness (t) {
 	brightness = t.value;
 }
+function changeWave (t) {
+	wave = t.value;
+}
+
+function changeWaveWidth (t) {
+	waveWidth = t.value;
+}
+
 function changeSaturation (t) {
 	saturation = t.value;
 }
