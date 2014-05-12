@@ -30,6 +30,7 @@
 	uniform float brightness;
 	uniform float contrast;
 	uniform float saturation;
+	uniform float hue;
 		
 	void main(void) {	
 		vec4 c = texture2D(uSampler, vTextureCoord);
@@ -84,6 +85,19 @@
 	    else
 	      c.rgb += (avg - c.rgb) * (-saturation);
 
+
+	  	/* hue adjustment, wolfram alpha: RotationTransform[angle, {1, 1, 1}][{x, y, z}] */
+        float angle = hue * 3.14159265;
+        float sen = sin(angle);
+        float cos = cos(angle);
+        vec3 weights = (vec3(2.0 * cos, -sqrt(3.0) * sen - cos, sqrt(3.0) * sen - cos) + 1.0) / 3.0;
+        float len = length(c.rgb);
+        c.rgb = vec3(
+            dot(c.rgb, weights.xyz),
+            dot(c.rgb, weights.zxy),
+            dot(c.rgb, weights.yzx)
+        );
+
 	    gl_FragColor = c;
 
 	}
@@ -107,10 +121,22 @@
 		<input type="range" id="contrast" min=-1 max=1 value=0 step=0.1 onchange="changeContrast(this);">
 		<label for="saturation">Satarutação</label>
 		<input type="range" id="saturation" min=-1 max=1 value=0 step=0.1 onchange="changeSaturation(this);">
+		<label for="sharpness">Nitidez</label>
+		<input type="range" id="sharpness" min=-1 max=1 value=0 step=1 onchange="changeSharpness(this);">
+		<label for="hue">Hue</label>
+		<input type="range" id="hue" min=-1 max=1 value=0 step=0.1 onchange="changeHue(this);">
 	</div>
-	<canvas id="videoGL" width="320" height="240" style="visibility: visible;"></canvas>
+	<div id="myCanvas">
+		<canvas id="videoGL" width="320" height="240" style="visibility: visible;"></canvas>
+		<canvas id="video1" width="320" height="240" style="visibility: visible;"></canvas>
+		<canvas id="video2" width="320" height="240" style="visibility: visible;"></canvas>
+		<canvas id="video3" width="320" height="240" style="visibility: visible;"></canvas>
+		<canvas id="video4" width="320" height="240" style="visibility: visible;"></canvas>	
+	</div>
 	<video id="monitor" autoplay width="320" height="240" style="visibility: hidden;"></video>
 	<canvas id="videoImage" width="256" height="256" style="visibility: hidden;"></canvas>
+	<canvas id="bg" width="256" height="256" style="visibility: hidden;"></canvas>
+	<img src="lena.png" style="visibility: hidden;">	
 	
 </body>
 
