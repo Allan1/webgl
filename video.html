@@ -19,9 +19,7 @@
 
 <script id="shader-fs" type="x-shader/x-fragment">
 	precision mediump float;
-		
 	uniform sampler2D uSampler;
-	
 	varying vec2 vTextureCoord;
 	uniform vec2 u_textureSize;
 	uniform float u_kernel[9];
@@ -31,6 +29,7 @@
 	uniform float contrast;
 	uniform float saturation;
 	uniform float hue;
+	uniform int posterize;
 		
 	void main(void) {	
 		vec4 c = texture2D(uSampler, vTextureCoord);
@@ -98,6 +97,14 @@
             dot(c.rgb, weights.yzx)
         );
 
+        //Posterizar a Imagem
+        if(posterize == 1)
+        {
+        	float arg = 0.6;
+			float level = (1.0-arg)*9.0+1.0;
+			c.rgb = floor(c.rgb * level + 0.5) / level;
+        }
+
 	    gl_FragColor = c;
 
 	}
@@ -125,6 +132,7 @@
 		<input type="range" id="sharpness" min=-1 max=1 value=0 step=1 onchange="changeSharpness(this);">
 		<label for="hue">Hue</label>
 		<input type="range" id="hue" min=-1 max=1 value=0 step=0.1 onchange="changeHue(this);">
+		<input type="checkbox" id='posterizar'value=0 onchange="setPosterize(this)">Posterizar
 	</div>
 	<div id="myCanvas">
 		<canvas id="videoGL" width="320" height="240" style="visibility: visible;"></canvas>

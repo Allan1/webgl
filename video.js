@@ -8,6 +8,7 @@ var saturation = 0.0;
 var hue = 0.0;
 var sharpness = 0.0;
 var kernelLocation = null;
+var posterize = 0;
 var kernel = [
       0, 0, 0,
       0, 1, 0,
@@ -172,10 +173,10 @@ function drawScene() {
 	videoTexture.needsUpdate = false;	
 		
 	gl.uniform1i(shader.SamplerUniform,0);
-
 	gl.uniform1f(shader.fragBrightness,1);
 	gl.uniform1f(shader.fragContrast,0);
 	gl.uniform1f(shader.fragSaturation,1);
+	gl.uniform1f(shader.fragPosterize,1);
 
 	gl.enableVertexAttribArray(shader.vertexPositionAttribute);
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertPosBuf);
@@ -317,12 +318,14 @@ function render() {
 	var fragBrightness			= gl.getUniformLocation(shader,"brightness");
 	var fragContrast			= gl.getUniformLocation(shader,"contrast");
 	var fragSaturation			= gl.getUniformLocation(shader,"saturation");
-	var fragHue			= gl.getUniformLocation(shader,"hue");
+	var fragHue					= gl.getUniformLocation(shader,"hue");
+	var fragPosterize			= gl.getUniformLocation(shader,"posterize");
 
 	gl.uniform1f(fragBrightness, brightness);
 	gl.uniform1f(fragContrast, contrast);
 	gl.uniform1f(fragSaturation, saturation);
 	gl.uniform1f(fragHue, hue);
+	gl.uniform1i(fragPosterize,posterize);
 	//console.log(fragBrightness);
 
 	kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
@@ -331,6 +334,11 @@ function render() {
   	gl.uniform1fv(kernelLocation, kernel);
 
 	drawScene();
+}
+function setPosterize(t)
+{
+	if(t.checked) posterize = 1;
+	else posterize = 0;
 }
 
 function changeContrast (t) {
