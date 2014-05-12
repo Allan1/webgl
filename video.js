@@ -5,7 +5,61 @@ var shader;
 var brightness = 0.0;
 var contrast = 0.0;
 var saturation = 0.0;
-
+var hue = 0.0;
+var sharpness = 0.0;
+var kernelLocation = null;
+var kernel = [
+      0, 0, 0,
+      0, 1, 0,
+      0, 0, 0
+    ];
+var kernels = {
+    normal: [
+      0, 0, 0,
+      0, 1, 0,
+      0, 0, 0
+    ],
+    unsharpen: [
+      -1, -1, -1,
+      -1,  9, -1,
+      -1, -1, -1
+    ],
+    sharpness: [
+       0,-1, 0,
+      -1, 6,-1,
+       0,-1, 0
+    ],
+    sharpen: [
+       -1, -1, -1,
+       -1, 16, -1,
+       -1, -1, -1
+    ],
+    edgeDetect2: [
+       -1, -1, -1,
+       -1,  8, -1,
+       -1, -1, -1
+    ],
+    edgeDetect6: [
+       -5, -5, -5,
+       -5, 39, -5,
+       -5, -5, -5
+    ],
+    sobelHorizontal: [
+        1,  2,  1,
+        0,  0,  0,
+       -1, -2, -1
+    ],
+    sobelVertical: [
+        1,  0, -1,
+        2,  0, -2,
+        1,  0, -1
+    ],
+    gaussianBlur: [
+      0.045, 0.122, 0.045,
+      0.122, 0.332, 0.122,
+      0.045, 0.122, 0.045
+    ],
+};
 var video, videoImage, videoImageContext, videoTexture;
 
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
@@ -166,14 +220,33 @@ function webGLStart() {
 	
 	
 	canvas = document.getElementById("videoGL");
+	/*
+	warhol1 = document.getElementById("video1");
+	warhol2 = document.getElementById("video2");
+	warhol3 = document.getElementById("video3");
+	warhol4 = document.getElementById("video4");
+	*/
+
 	gl = initGL(canvas);
-	
+	/*
+	glw1 = initGL(warhol1);
+	glw2 = initGL(warhol2);
+	glw3 = initGL(warhol3);
+	glw4 = initGL(warhol4);
+	*/
 	if (!gl) { 
 		alert("Could not initialise WebGL, sorry :-(");
 		return;
-		}
+	}
 		
 	shader = initShaders("shader", gl);
+	/*
+	shaderw1 = initShaders("shader", glw1);
+	shaderw2 = initShaders("shader", glw2);
+	shaderw3 = initShaders("shader", glw3);
+	shaderw4 = initShaders("shader", glw4);
+*/
+
 	if (shader == null) {
 		alert("Erro na inicilizacao do shader!!");
 		return;
@@ -182,6 +255,24 @@ function webGLStart() {
 	shader.vertexPositionAttribute 	= gl.getAttribLocation(shader, "aVertexPosition");
 	shader.vertexTextAttribute 		= gl.getAttribLocation(shader, "aVertexTexture");
 	shader.SamplerUniform	 		= gl.getUniformLocation(shader, "uSampler");
+
+/*
+	shaderw1.vertexPositionAttribute 	= gl.getAttribLocation(shaderw1, "aVertexPosition");
+	shaderw1.vertexTextAttribute 		= gl.getAttribLocation(shaderw1, "aVertexTexture");
+	shaderw1.SamplerUniform	 		= gl.getUniformLocation(shaderw1, "uSampler");
+
+	shaderw2.vertexPositionAttribute 	= gl.getAttribLocation(shaderw2, "aVertexPosition");
+	shaderw2.vertexTextAttribute 		= gl.getAttribLocation(shaderw2, "aVertexTexture");
+	shaderw2.SamplerUniform	 		= gl.getUniformLocation(shaderw2, "uSampler");
+
+	shaderw3.vertexPositionAttribute 	= gl.getAttribLocation(shaderw3, "aVertexPosition");
+	shaderw3.vertexTextAttribute 		= gl.getAttribLocation(shaderw3, "aVertexTexture");
+	shaderw3.SamplerUniform	 		= gl.getUniformLocation(shaderw3, "uSampler");
+
+	shaderw4.vertexPositionAttribute 	= gl.getAttribLocation(shaderw4, "aVertexPosition");
+	shaderw4.vertexTextAttribute 		= gl.getAttribLocation(shaderw4, "aVertexTexture");
+	shaderw4.SamplerUniform	 		= gl.getUniformLocation(shaderw4, "uSampler");
+	*/
 
 	if (shader.vertexPositionAttribute < 0 || shader.vertexTextAttribute < 0 ||
 		shader.SamplerUniform < 0 || shader.fragContrast < 0 || shader.fragBrightness < 0 || shader.fragSaturation < 0) 
@@ -193,6 +284,22 @@ function webGLStart() {
 	initBuffers(gl);
 	initTexture(gl, shader);
 	animate(gl, shader);
+
+	/*initBuffers(glw1);
+	initTexture(glw1, shaderw1);
+	animate(glw1, shaderw1);
+
+	initBuffers(glw2);
+	initTexture(glw2, shaderw2);
+	animate(glw2, shaderw2);
+
+	initBuffers(glw3);
+	initTexture(glw3, shaderw3);
+	animate(glw3, shaderw3);
+
+	initBuffers(glw4);
+	initTexture(glw4, shaderw4);
+	animate(glw4, shaderw4);*/
 }
 
 function animate(gl, shader) {
@@ -210,58 +317,18 @@ function render() {
 	var fragBrightness			= gl.getUniformLocation(shader,"brightness");
 	var fragContrast			= gl.getUniformLocation(shader,"contrast");
 	var fragSaturation			= gl.getUniformLocation(shader,"saturation");
+	var fragHue			= gl.getUniformLocation(shader,"hue");
 
 	gl.uniform1f(fragBrightness, brightness);
 	gl.uniform1f(fragContrast, contrast);
 	gl.uniform1f(fragSaturation, saturation);
+	gl.uniform1f(fragHue, hue);
 	//console.log(fragBrightness);
 
-	var kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
+	kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
 
-  	var kernels = {
-	    normal: [
-	      0, 0, 0,
-	      0, 1, 0,
-	      0, 0, 0
-	    ],
-	    unsharpen: [
-	      -1, -1, -1,
-	      -1,  9, -1,
-	      -1, -1, -1
-	    ],
-	    sharpness: [
-	       0,-1, 0,
-	      -1, 5,-1,
-	       0,-1, 0
-	    ],
-	    sharpen: [
-	       -1, -1, -1,
-	       -1, 16, -1,
-	       -1, -1, -1
-	    ],
-	    edgeDetect2: [
-	       -1, -1, -1,
-	       -1,  8, -1,
-	       -1, -1, -1
-	    ],
-	    sobelHorizontal: [
-	        1,  2,  1,
-	        0,  0,  0,
-	       -1, -2, -1
-	    ],
-	    sobelVertical: [
-	        1,  0, -1,
-	        2,  0, -2,
-	        1,  0, -1
-	    ],
-	    gaussianBlur: [
-	      0.045, 0.122, 0.045,
-	      0.122, 0.332, 0.122,
-	      0.045, 0.122, 0.045
-	    ],
-	};
-  gl.uniform1fv(kernelLocation, kernels.normal);
-
+  	
+  	gl.uniform1fv(kernelLocation, kernel);
 
 	drawScene();
 }
@@ -274,4 +341,22 @@ function changeBrightness (t) {
 }
 function changeSaturation (t) {
 	saturation = t.value;
+}
+function changeHue (t) {
+	hue = t.value;
+}
+function changeSharpness (t) {
+	sharpness = t.value;
+	if (sharpness > 0.0) {
+		kernel = kernels.unsharpen;
+	}
+	else if (sharpness < 0.0) {
+		kernel = kernels.gaussianBlur;
+	}
+	else{
+		kernel = kernels.normal;
+	}
+	kernelLocation = gl.getUniformLocation(shader, "u_kernel[0]");
+	gl.uniform1fv(kernelLocation, kernel);
+	drawScene();
 }
