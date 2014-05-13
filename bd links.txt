@@ -3,3 +3,6 @@ http://greggman.github.io/webgl-fundamentals/webgl/lessons/webgl-image-processin
 http://stackoverflow.com/questions/8652985/2d-image-processing-with-webgl
 http://www.khronos.org/files/webgl/webgl-reference-card-1_0.pdf
 http://davidwalsh.name/webgl-demos
+
+
+http://www.nutty.ca/articles/blend_modes/

@@ -28,38 +28,23 @@
 	uniform float saturation;
 	uniform float hue;
 	uniform int posterize;
-	uniform float wave;
-	uniform float waveWidth;
-  	uniform float time;
   	float pi = 3.14159265358979323846264;
 		
 	void main(void) 
 	{	
 		vec4 c = texture2D(texture, vTextureCoord);
-		vec2 texCoord = vTextureCoord;
-
-	   //Nova textura de ondas
-	   if(waveWidth > 0.0)
-	   {
-		vec2 coordOffset = -u_textureSize*0.5;
-		vec2 v = gl_FragCoord.xy + coordOffset;
-		float d = length(v);
-		float radius = 0.5 * max(u_textureSize.x, u_textureSize.y);
-		v += max(0.0, (radius-d)/radius) * wave * 30.0 * cos(pi*(d/waveWidth - 2.0*time));
-		texCoord = (v - coordOffset) / u_textureSize;
-	   }
 
 	   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
 	   vec4 colorSum =
-	     texture2D(texture, texCoord + onePixel * vec2(-1, -1)) * u_kernel[0] +
-	     texture2D(texture, texCoord + onePixel * vec2( 0, -1)) * u_kernel[1] +
-	     texture2D(texture, texCoord + onePixel * vec2( 1, -1)) * u_kernel[2] +
-	     texture2D(texture, texCoord + onePixel * vec2(-1,  0)) * u_kernel[3] +
-	     texture2D(texture, texCoord + onePixel * vec2( 0,  0)) * u_kernel[4] +
-	     texture2D(texture, texCoord + onePixel * vec2( 1,  0)) * u_kernel[5] +
-	     texture2D(texture, texCoord + onePixel * vec2(-1,  1)) * u_kernel[6] +
-	     texture2D(texture, texCoord + onePixel * vec2( 0,  1)) * u_kernel[7] +
-	     texture2D(texture, texCoord + onePixel * vec2( 1,  1)) * u_kernel[8] ;
+	     texture2D(texture, vTextureCoord + onePixel * vec2(-1, -1)) * u_kernel[0] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 0, -1)) * u_kernel[1] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 1, -1)) * u_kernel[2] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2(-1,  0)) * u_kernel[3] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 0,  0)) * u_kernel[4] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 1,  0)) * u_kernel[5] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2(-1,  1)) * u_kernel[6] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 0,  1)) * u_kernel[7] +
+	     texture2D(texture, vTextureCoord + onePixel * vec2( 1,  1)) * u_kernel[8] ;
 	   float kernelWeight =
 	     u_kernel[0] +
 	     u_kernel[1] +
@@ -94,6 +79,26 @@
         if(posterize == 1)
         {
 			float level = 5.0;
+
+			//Mesclar com a cor
+			vec3 color = vec3(50.0,178.0,117.0)/255.0;
+
+			//Multiplicar
+			//c.rgb *= color;
+
+			//Escurecer
+			c.rgb = min(c.rgb,color);
+
+			//Color Dodge
+			/*c.rgb = vec3((c.x == 1.0) ? 1.0 : min(1.0, color.x / (1.0 - c.x)),
+			(c.y == 1.0) ? 1.0 : min(1.0, color.y / (1.0 - c.y)),
+			(c.z == 1.0) ? 1.0 : min(1.0, color.z / (1.0 - c.z)));*/
+
+			//Explosão da cor
+			/*c.rgb = vec3((c.x == 0.0) ? 0.0 : (1.0 - ((1.0 - color.x) / c.x)),
+			(c.y == 0.0) ? 0.0 : (1.0 - ((1.0 - color.y) / c.y)),
+			(c.z == 0.0) ? 0.0 : (1.0 - ((1.0 - color.z) / c.z)));*/
+
 			c.rgb = floor((c.rgb * level) + 0.5) / level;
         }
 
@@ -116,7 +121,7 @@
 
 <script type="text/javascript" src="scripts/webgl-utils.js"></script>
 <script type="text/javascript" src="scripts/shaders.js"></script>
-<script type="text/javascript" src="scripts/video.js"></script>
+<script type="text/javascript" src="scripts/warhol.js"></script>
 <style type="text/css">
 	#myCanvas,#monitor
 	{
@@ -128,30 +133,11 @@
 </head>
 
 <body onload="webGLStart();">
-    <h1>Trabalho MATA65 - Allan Oliveira e Lucas Marotta</h1><br />
-    <a href="warhol.html">Efeito Andy Warhol (pop art)</a>
+    <h1>Trabalho MATA65 - Allan Oliveira e Lucas Marotta</h1><br/>
+    <a href="index.html">Imagem e Filtros</a>
     <br/>
-	<form id='filters'>
-		<label for="brightness">Brilho</label>
-		<input type="range" id="brightness" min=-1 max=1 value=0 step=0.1 onchange="changeBrightness(this);">
-		<label for="contrast">Contraste</label>
-		<input type="range" id="contrast" min=-1 max=1 value=0 step=0.1 onchange="changeContrast(this);">
-		<label for="saturation">Satarutação</label>
-		<input type="range" id="saturation" min=-1 max=1 value=0 step=0.1 onchange="changeSaturation(this);">
-		<label for="sharpness">Nitidez</label>
-		<input type="range" id="sharpness" min=-1 max=1 value=0 step=1 onchange="changeSharpness(this);">
-		<label for="hue">Matiz</label>
-		<input type="range" id="hue" min=-1 max=1 value=0 step=0.1 onchange="changeHue(this);">
-		<label for="wave">Ondulações</label>
-		<input type="range" id="wave" min=0 max=1 value=0 step=0.1 onchange="changeWave(this);">
-		<label for="waveWidth">Tamanho da Onda</label>
-		<input type="range" id="waveWidth" min=1 max=100 value=25 step=10 onchange="changeWaveWidth(this);">
-		<input type="checkbox" id='posterizar'value=0 onchange="setPosterize(this)">Posterizar
-		<br>
-		<input type="button" onclick="resetFilters()" value="Desfazer">
-	</form>
 	<div id="myCanvas">
-		<canvas id="videoGL" width="320" height="240"></canvas>
+		<canvas id="videoGL" width='640' height='480'></canvas>
 	</div>
 	<video id="monitor" autoplay width="320" height="240" style="visibility: visible;"></video>
 </body>

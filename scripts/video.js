@@ -23,47 +23,7 @@ var kernels = {
       -1,  9, -1,
       -1, -1, -1
     ],
-    sharpness: [
-       0,-1, 0,
-      -1, 6,-1,
-       0,-1, 0
-    ],
-    sharpen: [
-       -1, -1, -1,
-       -1, 16, -1,
-       -1, -1, -1
-    ],
-    edgeDetect2: [
-       -1, -1, -1,
-       -1,  8, -1,
-       -1, -1, -1
-    ],
-    edgeDetect6: [
-       -5, -5, -5,
-       -5, 39, -5,
-       -5, -5, -5
-    ],
-    sobelHorizontal: [
-        1,  2,  1,
-        0,  0,  0,
-       -1, -2, -1
-    ],
-    sobelVertical: [
-        1,  0, -1,
-        2,  0, -2,
-        1,  0, -1
-    ],
-    gaussianBlur: [
-      0.045, 0.122, 0.045,
-      0.122, 0.332, 0.122,
-      0.045, 0.122, 0.045
-    ],
-    gaussianBlur2: [
-      1, 2, 1,
-      2, 4, 2,
-      1, 2, 1
-    ],
-    gaussianBlur3: [
+    blur: [
       0, 1, 0,
       1, 1, 1,
       0, 1, 0
@@ -187,7 +147,6 @@ function drawScene() {
 	gl.enableVertexAttribArray(shader.vertexTextAttribute);
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertTextBuf);
 	gl.vertexAttribPointer(shader.vertexTextAttribute, vertTextBuf.itemSize, gl.FLOAT, false, 0, 0);
-	//setRectangle(0, 0, video.width,video.height);
 	gl.drawArrays(gl.TRIANGLES, 0, vertPosBuf.numItems);
 }
 
@@ -217,41 +176,12 @@ function webGLStart() {
 
 	video = document.getElementById("monitor");
 	canvas = document.getElementById("videoGL");
-
-	/*videoImage = document.getElementById("videoImage");
-	videoContext = videoImage.getContext("2d");
-	
-	// background color if no video present
-	videoContext.fillStyle = "#005337";
-	videoContext.fillRect(0, 0, videoImage.width, videoImage.height);*/
-
-
-	/*
-	warhol1 = document.getElementById("video1");
-	warhol2 = document.getElementById("video2");
-	warhol3 = document.getElementById("video3");
-	warhol4 = document.getElementById("video4");
-	*/
-
 	gl = initGL(canvas);
-	/*
-	glw1 = initGL(warhol1);
-	glw2 = initGL(warhol2);
-	glw3 = initGL(warhol3);
-	glw4 = initGL(warhol4);
-	*/
 	if (!gl) { 
 		alert("Could not initialise WebGL, sorry :-(");
 		return;
 	}
 	shader = initShaders("shader", gl);
-	/*
-	shaderw1 = initShaders("shader", glw1);
-	shaderw2 = initShaders("shader", glw2);
-	shaderw3 = initShaders("shader", glw3);
-	shaderw4 = initShaders("shader", glw4);
-*/
-
 	if (shader == null) {
 		alert("Erro na inicilizacao do shader!!");
 		return;
@@ -259,46 +189,11 @@ function webGLStart() {
 
 	shader.vertexPositionAttribute 	= gl.getAttribLocation(shader, "aVertexPosition");
 	shader.vertexTextAttribute 		= gl.getAttribLocation(shader, "aVertexTexture");
-
-/*
-	shaderw1.vertexPositionAttribute 	= gl.getAttribLocation(shaderw1, "aVertexPosition");
-	shaderw1.vertexTextAttribute 		= gl.getAttribLocation(shaderw1, "aVertexTexture");
-	shaderw1.texture	 		= gl.getUniformLocation(shaderw1, "texture");
-
-	shaderw2.vertexPositionAttribute 	= gl.getAttribLocation(shaderw2, "aVertexPosition");
-	shaderw2.vertexTextAttribute 		= gl.getAttribLocation(shaderw2, "aVertexTexture");
-	shaderw2.texture	 		= gl.getUniformLocation(shaderw2, "texture");
-
-	shaderw3.vertexPositionAttribute 	= gl.getAttribLocation(shaderw3, "aVertexPosition");
-	shaderw3.vertexTextAttribute 		= gl.getAttribLocation(shaderw3, "aVertexTexture");
-	shaderw3.texture	 		= gl.getUniformLocation(shaderw3, "texture");
-
-	shaderw4.vertexPositionAttribute 	= gl.getAttribLocation(shaderw4, "aVertexPosition");
-	shaderw4.vertexTextAttribute 		= gl.getAttribLocation(shaderw4, "aVertexTexture");
-	shaderw4.texture	 		= gl.getUniformLocation(shaderw4, "texture");
-	*/
-
 	if(shader.vertexPositionAttribute >= 0 && shader.vertexTextAttribute >= 0 && setShaderUniform()) 
 	{
 		initBuffers(shader);
 		initTexture();
 		animate(shader);
-
-		/*initBuffers(glw1);
-		initTexture(glw1, shaderw1);
-		animate(glw1, shaderw1);
-
-		initBuffers(glw2);
-		initTexture(glw2, shaderw2);
-		animate(glw2, shaderw2);
-
-		initBuffers(glw3);
-		initTexture(glw3, shaderw3);
-		animate(glw3, shaderw3);
-
-		initBuffers(glw4);
-		initTexture(glw4, shaderw4);
-		animate(glw4, shaderw4);*/
 	}
 
 	else
@@ -327,9 +222,6 @@ function setShaderUniform()
 	shader.textureSize	  = gl.getUniformLocation(shader,"u_textureSize");
 	shader.waveWidth 	  = gl.getUniformLocation(shader,"waveWidth");
 	shader.kernelLocation = gl.getUniformLocation(shader,"u_kernel[0]");
-	//return true;
-
-	//getUniformLocation retorna null se falhar
 	if(shader.texture && shader.brightness && shader.contrast && shader.saturation &&
 		shader.hue && shader.posterize && shader.wave && shader.videoTime &&
 		shader.textureSize && shader.waveWidth && shader.kernelLocation)
@@ -358,20 +250,6 @@ function render()
 		videoTexture.needsUpdate = true;
 	}
 	drawScene();
-}
-
-function setRectangle(x, y, width, height) {
-  var x1 = x;
-  var x2 = x + width;
-  var y1 = y;
-  var y2 = y + height;
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-     x1, y1,
-     x2, y1,
-     x1, y2,
-     x1, y2,
-     x2, y1,
-     x2, y2]), gl.STATIC_DRAW);
 }
 
 function resetFilters()
@@ -421,7 +299,7 @@ function changeSharpness (t) {
 		kernel_config = 'unsharpen';
 	}
 	else if (sharpness < 0.0) {
-		kernel_config = 'gaussianBlur3';
+		kernel_config = 'blur';
 	}
 	else{
 		kernel_config = 'normal';

@@ -2,9 +2,29 @@ var vertPosBuf;
 var vertTextBuf;
 var gl;
 var shader;
-
-var video, videoImage, videoImageContext, videoTexture;
-
+var brightness = 0.1;
+var contrast = 0.0;
+var saturation = -1.0;
+var hue = 0.0;
+var sharpness = 0.0;
+var kernelLocation = null;
+var posterize = 1;
+var wave = 0;
+var waveWidth = 25.0;
+var kernel_config = 'blur';
+var kernels = {
+    normal: [
+      0, 0, 0,
+      0, 1, 0,
+      0, 0, 0
+    ],
+    blur: [
+      0, 1, 0,
+      1, 1, 1,
+      0, 1, 0
+    ]
+};
+var video, videoContext, videoTexture;
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 window.URL = window.URL || window.webkitURL;
 
@@ -52,7 +72,7 @@ function initGL(canvas) {
 
 // ********************************************************
 // ********************************************************
-function initBuffers(gl) {
+function initBuffers() {
 var vPos = new Array;
 var vTex = new Array;
 
@@ -102,23 +122,21 @@ var vTex = new Array;
 // ********************************************************
 // ********************************************************
 function drawScene() {
-	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+
+	//warhol purple
+	gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	
 	if (!videoTexture.needsUpdate) 
 		return;
-	
-   	gl.useProgram(shader);
+
+	gl.useProgram(shader);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, videoTexture);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoImage);
-	videoTexture.needsUpdate = false;	
-		
-	gl.uniform1i(shader.SamplerUniform,0);
-
-	gl.uniform1f(shader.fragBrightness,1);
-	gl.uniform1f(shader.fragContrast,0);
-	gl.uniform1f(shader.fragSaturation,1);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+	videoTexture.needsUpdate = false;
+	gl.uniform1f(shader.hue, 0.4);
+	videoEffects();	
 
 	gl.enableVertexAttribArray(shader.vertexPositionAttribute);
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertPosBuf);
@@ -127,18 +145,36 @@ function drawScene() {
 	gl.enableVertexAttribArray(shader.vertexTextAttribute);
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertTextBuf);
 	gl.vertexAttribPointer(shader.vertexTextAttribute, vertTextBuf.itemSize, gl.FLOAT, false, 0, 0);
-
 	gl.drawArrays(gl.TRIANGLES, 0, vertPosBuf.numItems);
+
+	//warhol red
+	gl.uniform1f(shader.hue, -0.8);
+	gl.viewport(gl.viewportWidth/2,0, gl.viewportWidth/2, gl.viewportHeight/2);
+	gl.drawArrays(gl.TRIANGLES, 0, vertPosBuf.numItems);
+
+	//warhol green
+	gl.uniform1f(shader.hue, 0.0);
+	gl.viewport(0,gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+	gl.drawArrays(gl.TRIANGLES, 0, vertPosBuf.numItems);
+
+	//warhol yellow
+	gl.uniform1f(shader.hue, -0.5);
+	gl.viewport(gl.viewportWidth/2,gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+	gl.drawArrays(gl.TRIANGLES, 0, vertPosBuf.numItems);
+
+
 }
 
 // ********************************************************
 // ********************************************************
-function initTexture(gl, shader) {
+function initTexture() {
 
-	videoTexture = gl.createTexture();		
-	gl.bindTexture(gl.TEXTURE_2D, videoTexture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	videoTexture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, videoTexture);		
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 	videoTexture.needsUpdate = false;
 }
 
@@ -151,26 +187,18 @@ function webGLStart() {
 			"Sorry. <code>navigator.getUserMedia()</code> is not available.";
 		}
 	navigator.getUserMedia({video: true}, gotStream, noStream);
-
 	// assign variables to HTML elements
+
 	video = document.getElementById("monitor");
-	videoImage = document.getElementById("videoImage");
-	videoImageContext = videoImage.getContext("2d");
-	
-	// background color if no video present
-	videoImageContext.fillStyle = "#005337";
-	videoImageContext.fillRect( 0, 0, videoImage.width, videoImage.height );
-	
-	
 	canvas = document.getElementById("videoGL");
+
 	gl = initGL(canvas);
-	
 	if (!gl) { 
 		alert("Could not initialise WebGL, sorry :-(");
 		return;
-		}
-		
+	}
 	shader = initShaders("shader", gl);
+
 	if (shader == null) {
 		alert("Erro na inicilizacao do shader!!");
 		return;
@@ -178,35 +206,129 @@ function webGLStart() {
 
 	shader.vertexPositionAttribute 	= gl.getAttribLocation(shader, "aVertexPosition");
 	shader.vertexTextAttribute 		= gl.getAttribLocation(shader, "aVertexTexture");
-	shader.SamplerUniform	 		= gl.getUniformLocation(shader, "uSampler");
-	shader.fragBrightness			= gl.getUniformLocation(shader,"brightness");
-	shader.fragContrast				= gl.getUniformLocation(shader,"contrast");
-	shader.fragSaturation			= gl.getUniformLocation(shader,"saturation");
 
-	if (shader.vertexPositionAttribute < 0 || shader.vertexTextAttribute < 0 ||
-		shader.SamplerUniform < 0 || shader.fragContrast < 0 || shader.fragBrightness < 0 || shader.fragSaturation < 0) 
+	if(shader.vertexPositionAttribute >= 0 && shader.vertexTextAttribute >= 0 && setShaderUniform()) 
 	{
-		alert("Shader attribute ou uniform nao localizado!");
+		initBuffers(shader);
+		initTexture();
+		animate(shader);
+	}
+
+	else
+	{
+		alert("Shader attribute ou uniform nao localizado! Ver console");
+		console.log(shader);
 		return;
 	}
-		
-	initBuffers(gl);
-	initTexture(gl, shader);
-	animate(gl, shader);
 }
 
-function animate(gl, shader) {
+function animate(shader) {
     requestAnimationFrame( animate );
 	render();		
 }
 
-function render() {	
-	
+function setShaderUniform() 
+{
+	shader.texture 		  = gl.getUniformLocation(shader,"texture");
+	shader.brightness	  = gl.getUniformLocation(shader,"brightness");
+	shader.contrast		  = gl.getUniformLocation(shader,"contrast");
+	shader.saturation	  = gl.getUniformLocation(shader,"saturation");
+	shader.hue			  = gl.getUniformLocation(shader,"hue");
+	shader.posterize	  = gl.getUniformLocation(shader,"posterize");
+	shader.textureSize	  = gl.getUniformLocation(shader,"u_textureSize");
+	shader.kernelLocation = gl.getUniformLocation(shader,"u_kernel[0]");
+
+	//getUniformLocation retorna null se falhar
+	if(shader.texture && shader.brightness && shader.contrast && shader.saturation &&
+		shader.hue && shader.posterize &&
+		shader.textureSize && shader.kernelLocation)
+		return true;
+	return false;
+}
+
+function videoEffects()
+{
+	gl.uniform2f(shader.textureSize,gl.viewportWidth/2,gl.viewportHeight/2);
+	gl.uniform1f(shader.brightness, brightness);
+	gl.uniform1f(shader.contrast, contrast);
+	gl.uniform1f(shader.saturation, saturation);
+	gl.uniform1i(shader.posterize,posterize);
+  	gl.uniform1fv(shader.kernelLocation, kernels[kernel_config]);
+}
+
+function render() 
+{	
 	if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
-		videoImageContext.drawImage( video, 0, 0, videoImage.width, videoImage.height );
+		video.play();
 		videoTexture.needsUpdate = true;
 	}
 	drawScene();
 }
 
+function setRectangle(x, y, width, height) {
+  var x1 = x;
+  var x2 = x + width;
+  var y1 = y;
+  var y2 = y + height;
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+     x1, y1,
+     x2, y1,
+     x1, y2,
+     x1, y2,
+     x2, y1,
+     x2, y2]), gl.STATIC_DRAW);
+}
 
+function resetFilters()
+{
+	document.getElementById("filters").reset();
+	brightness = 0.0;
+	contrast = 0.0;
+	saturation = 0.0;
+	hue = 0.0;
+	sharpness = 0.0;
+	kernelLocation = null;
+	posterize = 0;
+	wave = 0;
+	waveWidth = 25.0;
+	kernel_config = 'normal';
+}
+
+function setPosterize(t)
+{
+	if(t.checked) posterize = 1;
+	else posterize = 0;
+}
+
+function changeContrast (t) {
+	contrast = t.value;
+}
+function changeBrightness (t) {
+	brightness = t.value;
+}
+function changeWave (t) {
+	wave = t.value;
+}
+
+function changeWaveWidth (t) {
+	waveWidth = t.value;
+}
+
+function changeSaturation (t) {
+	saturation = t.value;
+}
+function changeHue (t) {
+	hue = t.value;
+}
+function changeSharpness (t) {
+	sharpness = t.value;
+	if (sharpness > 0.0) {
+		kernel_config = 'unsharpen';
+	}
+	else if (sharpness < 0.0) {
+		kernel_config = 'blur';
+	}
+	else{
+		kernel_config = 'normal';
+	}
+}
